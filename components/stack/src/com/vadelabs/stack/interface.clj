@@ -1,5 +1,5 @@
 (ns com.vadelabs.stack.interface
-  (:refer-clojure :exclude [empty? pop get set])
+  (:refer-clojure :exclude [empty? pop get set peek])
   (:require
    [com.vadelabs.stack.core :as stack]))
 
@@ -32,6 +32,10 @@
 (defn pop
   [s]
   (stack/pop s))
+
+(defn peek
+  [s]
+  (stack/peek s))
 
 (defn get
   [s]

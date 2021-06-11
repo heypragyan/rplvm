@@ -17,10 +17,10 @@
 
 (defn instruction-table
   []
-  (let [it (vm.instruction/make-instruction)]
+  (let [it (vm.instruction/make-instruction-table)]
     (-> it
-        (vm.instruction/insert {:op-code 0 :name "push" :arity 1 :func push})
-        (vm.instruction/insert {:op-code 1 :name "add" :arity 0 :func add}))))
+        (vm.instruction/insert (vm.instruction/make-instruction 0 "push" 1 push))
+        (vm.instruction/insert (vm.instruction/make-instruction 1 "add" 0 add)))))
 
 (defn build-program
   [it]
@@ -34,7 +34,9 @@
   []
   (let [it (instruction-table)
         code (build-program it)
-        machine (vm.machine/make-machine code it)
+        machine (vm.machine/make-machine code {} it)
         machine (vm.machine/execute machine)
         result (vm.machine/operand-pop machine)]
     result))
+
+#_(addition-example)

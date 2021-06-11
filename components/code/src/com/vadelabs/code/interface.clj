@@ -11,9 +11,9 @@
 (def add-label vm.builder/add-label)
 (def builder-data vm.builder/data)
 
-(def make-code vm.code/make-code)
-(def code-symbols vm.code/symbols)
 (def code vm.code/code)
 (def code-data vm.code/data)
 (def code-labels vm.code/labels)
 (def code-label-ip vm.code/label-ip)
+(def code-symbols vm.code/symbols)
+(def make-code vm.code/make-code)

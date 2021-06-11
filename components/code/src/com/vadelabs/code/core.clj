@@ -6,8 +6,8 @@
 
 (defprotocol ICode
   (symbols [this])
-  (code [this])
-  (data [this])
+  (-code [this])
+  (-data [this])
   (labels [this])
   (label-ip [this item]))
 
@@ -15,9 +15,9 @@
   ICode
   (symbols [this]
     (get-in this [:symbols]))
-  (code [this]
+  (-code [this]
     (get-in this [:code]))
-  (data [this]
+  (-data [this]
     (get-in this [:data]))
   (labels [this]
     (get-in this [:labels]))
@@ -26,6 +26,18 @@
              (fn [label]
                (= (second label) item))
              (get-in this [:labels])))))
+
+(defn data
+  ([code]
+   (-> code (-data)))
+  ([code idx]
+   (-> code (-data) (get idx))))
+
+(defn code
+  ([code]
+   (-> code (-code)))
+  ([code idx]
+   (-> code (-code) (get idx))))
 
 (defn make-code
   ([]

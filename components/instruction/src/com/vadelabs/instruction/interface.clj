@@ -19,6 +19,10 @@
   [instr]
   (instruction/arity instr))
 
+(defn function
+  [instr]
+  (instruction/function instr))
+
 (defn by-op-code
   [table op-code]
   (it/by-op-code table op-code))
