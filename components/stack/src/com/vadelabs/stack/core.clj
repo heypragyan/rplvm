@@ -31,5 +31,5 @@
   (clear-stack [this]
     (assoc this :stack (clojure.core/empty (:stack this)))))
 
-(defn new-stack []
+(defn make-stack []
   (map->Stack {:stack '()}))

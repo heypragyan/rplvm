@@ -5,12 +5,12 @@
 
 (deftest test-stack-operations
   (testing "initialize new stack"
-    (let [s (stack/new-stack)]
+    (let [s (stack/make-stack)]
       (is (stack/empty? s))))
   (testing "push value to a stack"
-    (let [s-1 (stack/new-stack)
+    (let [s-1 (stack/make-stack)
           s-2 (stack/push s-1 12)
-          s-3 (-> (stack/new-stack)
+          s-3 (-> (stack/make-stack)
                   (stack/push 1)
                   (stack/push 2)
                   (stack/push 3))]
@@ -18,10 +18,10 @@
       (is (= '(12) (stack/get s-2)))
       (is (= '(3 2 1) (-> s-3 stack/get)))))
   (testing "pop value from the stack"
-    (let [s-1 (stack/new-stack)
+    (let [s-1 (stack/make-stack)
           s-2 (stack/push s-1 13)
           s-3 (stack/pop s-2)
-          s-4 (-> (stack/new-stack)
+          s-4 (-> (stack/make-stack)
                   (stack/push 1)
                   (stack/push 2)
                   (stack/push 3)
@@ -30,6 +30,6 @@
       (is (stack/empty? s-3))
       (is (= '(2 1) (-> s-4 stack/get)))))
   (testing "push values - variadic args"
-    (let [s-1 (-> (stack/new-stack)
+    (let [s-1 (-> (stack/make-stack)
                   (stack/push 1 2 3 4))]
       (is (= '(4 3 2 1) (-> s-1 stack/get))))))

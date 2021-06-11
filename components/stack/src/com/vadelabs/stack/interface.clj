@@ -3,9 +3,9 @@
   (:require
    [com.vadelabs.stack.core :as stack]))
 
-(defn new-stack
+(defn make-stack
   []
-  (stack/new-stack))
+  (stack/make-stack))
 
 (defn empty?
   [s]
