@@ -81,7 +81,11 @@
                           clj-http/clj-http {:mvn/version "3.12.2"}}}
 
             :test
-            {:extra-paths ["components/rpl-project-one/test"]
+            {:extra-paths ["components/code/test"
+                           "components/instruction/test"
+                           "components/machine/test"
+                           "components/rpl/test"
+                           "components/stack"]
              :extra-deps {}}
             :nrepl
             {:extra-deps {nrepl/nrepl                {:mvn/version "0.8.3"}
