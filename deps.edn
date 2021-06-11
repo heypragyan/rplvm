@@ -12,6 +12,8 @@
              "clojars" {:url "https://repo.clojars.org/"}}
  :aliases  {:dev
             {:extra-paths ["development/src"
+                           "components/code/src"
+                           "components/code/resources"
                            "components/instruction/src"
                            "components/instruction/resources"
                            "components/stack/src"
