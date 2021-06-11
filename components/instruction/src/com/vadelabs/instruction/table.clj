@@ -1,13 +1,14 @@
 (ns com.vadelabs.instruction.table
   (:refer-clojure :exclude [empty?])
   (:require
-   [com.vadelabs.instruction.core :as instr]))
+   [com.vadelabs.instruction.core :as instruction]))
 
 (defprotocol ITable
   (by-op-code [this op-code])
   (by-name [this n])
   (insert [this instr])
-  (empty? [this]))
+  (empty? [this])
+  (symbols [this]))
 
 (defrecord Table [table]
   ITable
@@ -16,16 +17,23 @@
 
   (by-name [this n]
     (first (filter (fn [item]
-                     (= n (instr/get-name item)))
+                     (= n (instruction/get-name item)))
                    (vals (get-in this [:table])))))
 
   (insert [this instr]
     (assoc-in this [:table (:op-code instr)] instr))
 
   (empty? [this]
-    (clojure.core/empty? (:table this))))
+    (clojure.core/empty? (:table this)))
 
-(defn new-table
+  (symbols [this]
+    (let [result (map (fn [k]
+                        (let [instr (get-in this [:table k])]
+                          [(instruction/get-op-code instr) (instruction/get-name instr)]))
+                      (keys table))]
+      (sort-by first result))))
+
+(defn make-instruction-table
   []
   (map->Table {:table {}}))
 

@@ -2,18 +2,19 @@
 
 (defprotocol IInstruction
   (get-op-code [this])
-  (get-name [this]))
+  (get-name [this])
+  (arity [this]))
 
 (defrecord Instruction [op-code name arity func]
   IInstruction
   (get-op-code [this]
     (get-in this [:op-code]))
   (get-name [this]
-    (tap> ["TEST"])
-    (get-in this [:name])))
+    (get-in this [:name]))
+  (arity [this] (get this :arity)))
 
-(defn new-instruction
-  [{:keys [op-code name arity func]}]
+(defn make-instruction
+  [op-code name arity func]
   (map->Instruction {:op-code op-code
                      :name name
                      :arity arity
