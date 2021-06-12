@@ -11,6 +11,7 @@
   (operand-stack [this])
   (call-stack [this])
   (ip [this])
+  (inc-ip [this])
   (code [this])
   (data [this idx])
   (execute [this])
@@ -18,11 +19,13 @@
 
 (defrecord Machine [code instruction-table ip constants call-stack operand-stack]
   IMachine
-  (operand-push [_ value]
-    (vm.stack/push operand-stack value))
+  (operand-push [this value]
+    (assoc-in this [:operand-stack]
+              (vm.stack/push (get-in this [:operand-stack]) value)))
 
-  (operand-pop [_]
-    (vm.stack/pop operand-stack))
+  (operand-pop [this]
+    (as-> this $
+      (assoc-in $ [:operand-stack] (vm.stack/pop operand-stack))))
 
   (operand-peek [_]
     (vm.stack/peek operand-stack))
@@ -43,13 +46,39 @@
     (get-in this [:operand-stack]))
 
   (next-code [this]
-    (let [code (-> this
-                   (get-in [:code])
-                   (vm.code/code ip))]
-      (update-in this [:ip] + 1)
-      code))
+    (-> this
+        (get-in [:code])
+        (vm.code/code (get-in this [:ip]))))
 
-  (execute [this]))
+  (inc-ip [this]
+    (update-in this [:ip] + 1))
+
+  (execute [this]
+    (loop [machine this
+           iter-cnt 0]
+      (if (= iter-cnt (count (vm.code/code code)))
+        machine
+        (let [op-code (-> machine (next-code))
+              arity  (-> machine
+                         (inc-ip)
+                         (next-code))
+              instr (vm.instruction/by-op-code instruction-table op-code)
+              [m args] (loop [mach (-> machine (inc-ip) (inc-ip))
+                              result []
+                              cnt 0]
+                         (if (= cnt arity)
+                           [mach result]
+                           (recur (inc-ip mach) (conj result (next-code mach)) (+ cnt 1))))
+              func  (vm.instruction/function instr)
+              final-machine (func m args)]
+          (recur final-machine (+ iter-cnt arity 2)))))))
+
+
+
+  ;; (execute [this]
+  ;;   (let [op-code (next-code this)
+  ;;         arity (next-code this)]
+  ;;     [op-code arity (:ip this)])))
 
 
 

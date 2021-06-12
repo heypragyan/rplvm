@@ -12,6 +12,10 @@
              "clojars" {:url "https://repo.clojars.org/"}}
  :aliases  {:dev
             {:extra-paths ["development/src"
+                           "components/code/src"
+                           "components/code/resources"
+                           "components/instruction/src"
+                           "components/instruction/resources"
                            "components/stack/src"
                            "components/stack/resources"]
              :extra-deps {org.clojure/clojure {:mvn/version "1.10.3"}

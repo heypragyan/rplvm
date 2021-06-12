@@ -18,7 +18,8 @@
                 (vm.machine/operand-peek))
         lhs (-> machine
                 (vm.machine/operand-pop)
-                (vm.machine/operand-peek))]
+                (vm.machine/operand-peek))
+        machine (-> machine (vm.machine/operand-pop) (vm.machine/operand-pop))]
     (-> machine
         (vm.machine/operand-push (+ lhs rhs)))))
 
@@ -30,11 +31,12 @@
 
 #_(def it (instruction-table))
 #_(def builder (-> (vm.code/make-builder it)
-                   (vm.code/push "push" [2])
                    (vm.code/push "push" [3])
+                   (vm.code/push "push" [2])
                    (vm.code/push "add"  [])))
 #_(def constants {})
 #_(def machine (vm.machine/make-machine (vm.code/make-code builder) constants it))
+#_(tap> machine)
 #_(vm.machine/execute machine)
 
 (deftest test-machine-implmentation
@@ -53,4 +55,6 @@
                        (vm.code/push "push" [3])
                        (vm.code/push "add" []))
           constants {}
-          machine (vm.machine/make-machine (vm.code/make-code builder) constants it)])))
+          machine (vm.machine/make-machine (vm.code/make-code builder) constants it)
+          final-machine (vm.machine/execute machine)]
+      (is (= 5 (vm.machine/operand-peek final-machine))))))

@@ -1,7 +1,7 @@
-(ns
- (:require
-  [clojure.test :refer [deftest testing is are]]
-  [com.vadelabs.instruction.interface :as instr]))
+(ns com.vadelabs.instruction.interface-test
+  (:require
+   [clojure.test :refer [deftest testing is are]]
+   [com.vadelabs.instruction.interface :as instr]))
 
 (defn noop
   [machine & args])
@@ -41,4 +41,3 @@
 #_(-> (instr/make-instruction-table)
       (instr/insert (instr/make-instruction 0 "noop" 0 noop))
       (instr/symbols))
-

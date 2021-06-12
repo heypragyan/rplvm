@@ -6,7 +6,7 @@
   (arity [this])
   (function [this]))
 
-(defrecord Instruction [op-code name arity func]
+(defrecord Instruction [op-code name arity function]
   IInstruction
   (get-op-code [this]
     (get-in this [:op-code]))
