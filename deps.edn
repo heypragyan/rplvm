@@ -16,6 +16,8 @@
                            "components/code/resources"
                            "components/instruction/src"
                            "components/instruction/resources"
+                           "components/machine/src"
+                           "components/machine/resources"
                            "components/stack/src"
                            "components/stack/resources"]
              :extra-deps {org.clojure/clojure {:mvn/version "1.10.3"}

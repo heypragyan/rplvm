@@ -2,7 +2,8 @@
   (:require
    [com.vadelabs.stack.interface :as vm.stack]
    [com.vadelabs.code.interface :as vm.code]
-   [com.vadelabs.instruction.interface :as vm.instruction]))
+   [com.vadelabs.instruction.interface :as vm.instruction]
+   [com.vadelabs.machine.frame :as frame]))
 
 (defprotocol IMachine
   (operand-push [this value])
@@ -15,9 +16,15 @@
   (code [this])
   (data [this idx])
   (execute [this])
-  (next-code [this]))
+  (next-code [this])
+  (get-local [this n])
+  (set-local [this k v])
+  (jump [this label])
+  (call [this label])
+  (ret [this])
+  (process-code [this]))
 
-(defrecord Machine [code instruction-table ip constants call-stack operand-stack]
+(defrecord Machine [code process-code instruction-table ip constants call-stack operand-stack]
   IMachine
   (operand-push [this value]
     (assoc-in this [:operand-stack]
@@ -46,56 +53,65 @@
     (get-in this [:operand-stack]))
 
   (next-code [this]
-    (-> this
-        (get-in [:code])
-        (vm.code/code (get-in this [:ip]))))
+    (let [instr-ptr (get-in this [:ip])
+          code (-> this
+                   (get-in [:code])
+                   (vm.code/code instr-ptr))
+          new-ip (+ instr-ptr 1)]
+      (assoc this :process-code code :ip new-ip)))
 
-  (inc-ip [this]
-    (update-in this [:ip] + 1))
+  (get-local [this n]
+    (-> this
+        (get :call-stack)
+        (vm.stack/peek)
+        (frame/get-local n)))
+
+  (set-local [this k v]
+    (let [cs (get this :call-stack)
+          fr (vm.stack/peek cs)
+          fs (vm.stack/pop cs)
+          final-frame (frame/set-local fr k v)]
+      (assoc-in this [:call-stack] (vm.stack/push fs final-frame))))
+
+  (jump [this label]
+    (assoc-in this [:ip] (-> this
+                             (get :code)
+                             (vm.code/code-label-ip label))))
+
+  (call [this label]
+    (let [ip (get this :ip)
+          machine (assoc this :call-stack
+                         (vm.stack/push (get this :call-stack)
+                                        (frame/make-frame ip)))]
+      (jump machine label)))
+
+  (ret [this]
+    (let [frame (vm.stack/peek (get this :call-stack))
+          machine (assoc this :call-stack (vm.stack/pop (get this :call-stack)))]
+      (assoc machine :ip (frame/return-address frame))))
 
   (execute [this]
-    (loop [machine this
-           iter-cnt 0]
-      (if (= iter-cnt (count (vm.code/code code)))
+    (loop [machine this]
+      (if (= (get machine :ip) (count (vm.code/code code)))
         machine
-        (let [op-code (-> machine (next-code))
-              arity  (-> machine
-                         (inc-ip)
-                         (next-code))
+        (let [op-code (-> machine (next-code) (get :process-code))
+              arity (-> machine (next-code) (next-code) (get :process-code))
               instr (vm.instruction/by-op-code instruction-table op-code)
-              [m args] (loop [mach (-> machine (inc-ip) (inc-ip))
-                              result []
-                              cnt 0]
-                         (if (= cnt arity)
-                           [mach result]
-                           (recur (inc-ip mach) (conj result (next-code mach)) (+ cnt 1))))
-              func  (vm.instruction/function instr)
-              final-machine (func m args)]
-          (recur final-machine (+ iter-cnt arity 2)))))))
-
-
-
-  ;; (execute [this]
-  ;;   (let [op-code (next-code this)
-  ;;         arity (next-code this)]
-  ;;     [op-code arity (:ip this)])))
-
-
-
-
-
-;; (while (= ip (count (vm.code/code code)))
-;;       (let [op-code (next-code this)
-;;             arity (next-code this)
-;;             instr (vm.instruction/by-op-code instruction-table op-code)
-;;             args (into [] (repeatedly arity (next-code this)))
-;;             func (vm.instruction/function instr)]
-;;         (func this args)))
-
+              [machine args] (loop [machine (-> machine (next-code) (next-code))
+                                    result []]
+                               (if (= (count result) arity)
+                                 [machine result]
+                                 (recur (-> machine (next-code))
+                                        (conj result (-> machine (next-code) (get :process-code))))))
+              func (vm.instruction/function instr)
+              final-machine (func machine args)]
+          (recur final-machine))))))
 
 (defn make-machine
   [code constants instruction-table]
-  (let [call-stack (vm.stack/make-stack)]
+  (let [stack-frame (frame/make-frame (count (vm.code/code code)))
+        call-stack  (-> (vm.stack/make-stack)
+                        (vm.stack/push stack-frame))]
     (map->Machine {:code code
                    :instruction-table instruction-table
                    :ip 0
