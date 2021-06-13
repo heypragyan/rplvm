@@ -1,7 +1,6 @@
 (ns com.vadelabs.code.builder
   (:require
-   [com.vadelabs.instruction.interface :as vm.instruction]
-   [com.vadelabs.stack.interface :as vm.stack]))
+   [com.vadelabs.instruction.interface :as vm.instruction]))
 
 (defprotocol IBuilder
   (push [this item args])

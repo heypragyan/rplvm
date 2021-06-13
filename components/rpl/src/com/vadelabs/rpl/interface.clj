@@ -122,7 +122,7 @@
       (and (cstr/starts-with? current "!") (cstr/ends-with? current "+")) ["assign-var" [(remove-last current)] others]
       (cstr/starts-with? current "!") ["get-var" [current] others]
       (= "invoke>" current) ["invoke>" [(-> others first (symbol) (resolve)) (-> others rest first (edn/read-string))] (-> others rest rest)]
-      :else ["push" [(edn/read-string current)] others])))
+      :else ["push" [current] others])))
 
 (defn get-cond-block
   [others]
@@ -174,28 +174,50 @@
 
 (defn eval-str
   [str-val]
-  (let [instructions (cstr/split str-val #" ")
+  (let [instructions str-val
         it (instruction-table)
         builder (-> it
                     (vm.code/make-builder))
         builder (eval-builder builder instructions)
         machine (vm.machine/make-machine (vm.code/make-code builder) {} it)
         machine (vm.machine/execute machine)]
+    (tap> ["machine" machine])
     (vm.machine/operand-peek machine)))
 
-#_(def strv "1 2 invoke> + 2 !v1+ 4 4 <pop> 2 invoke> * 2 !v2+ invoke> = 2 if> 'hello' else> 'false!!' invoke> println 1 <pop> !v1 !v2 invoke> * 2")
+#_(def strv "1 2 invoke> + 2 !v1+ 4 4 <pop> 2 invoke> * 2 !v2+ invoke> = 2 if> 'hello' else> 'false!!' invoke> println 1 <pop> !v1 !v2 invoke> * 2 !v4")
 #_(eval-str strv)
 
-(defn body->builder
-  [builder body]
+(defn stringify-instruction
+  [item arglist]
+  (cond
+    (list? item)
+    (apply conj [(-> item (first) (str))] (flatten (map (fn [i]
+                                                          (cond
+                                                            (list? i) (stringify-instruction i arglist)
+                                                            :else
+                                                            (str i))) (rest item))))
+    (and (cstr/starts-with? (str item) "!") (cstr/ends-with? (str item) "+"))
+    [(str item)]
+    (and (cstr/starts-with? (str item) "!") (some #(= item %) arglist))
+    [item]
+    (cstr/starts-with? (str item) "!")
+    [(str item)]
+    (= (str item) "<pop>")
+    [(str item)]
+    :else
+    [item]))
+
+#_(apply conj [] [2])
+
+(defn stringify-body
+  [body arglist]
   (loop [current (first body)
          others (rest body)
-         builder builder
-         cnt 0]
-    (if (or (= cnt 2) (nil? current))
-      builder
-      (let [[op args] ["push" [current]]]
-        (recur (first others) (rest others) (-> builder (vm.code/push op args)) (+ cnt 1))))))
+         result []]
+    (if (nil? current)
+      result
+      (let [item (stringify-instruction current arglist)]
+        (recur (first others) (rest others) (apply conj result item))))))
 
 (defn defstackfn*
   [_ args]
@@ -206,13 +228,9 @@
                                                           :path)
                                 "is invalid."))))
   (let [{:keys [sym doc arglist options body]} (s/conform ::args args)
-        it (instruction-table)
-        builder (-> it
-                    (vm.code/make-builder)
-                    (body->builder body))
-        machine (vm.machine/make-machine (vm.code/make-code builder) {} it)]
+        instrs (stringify-body body arglist)]
     `(defn ~sym ~arglist
-       ~body)))
+       (eval-str ~instrs))))
 
 (defmacro defstackfn
   [& args]
@@ -230,6 +248,7 @@
                     (invoke> + 2)))
 
 #_(f 4 5 5)
+#_(eval-str (f 4 5 5))
 
 #_(defstackfn f
     [!a !b !c]
@@ -256,42 +275,3 @@
      !v2
      (invoke> * 2)))
 #_(f 1 2 4)
-
-
-
-;; (defn push
-;;   [machine args]
-;;   (let [arg (vm.machine/data machine args)]
-;;     (vm.machine/operand-push machine arg)))
-
-;; (defn add
-;;   [machine _]
-;;   (let [item-1 (vm.machine/operand-pop machine)
-;;         item-2 (vm.machine/operand-pop machine)]
-;;     (vm.machine/operand-push (+ item-1 item-2))))
-
-;; (defn instruction-table
-;;   []
-;;   (let [it (vm.instruction/make-instruction-table)]
-;;     (-> it
-;;         (vm.instruction/insert (vm.instruction/make-instruction 0 "push" 1 push))
-;;         (vm.instruction/insert (vm.instruction/make-instruction 1 "add" 0 add)))))
-
-;; (defn build-program
-;;   [it]
-;;   (let [builder (vm.code/make-builder it)]
-;;     (-> builder
-;;         (vm.code/push "push" [2])
-;;         (vm.code/push "push" [3])
-;;         (vm.code/push "add" []))))
-
-;; (defn addition-example
-;;   []
-;;   (let [it (instruction-table)
-;;         code (build-program it)
-;;         machine (vm.machine/make-machine code {} it)
-;;         machine (vm.machine/execute machine)
-;;         result (vm.machine/operand-pop machine)]
-;;     result))
-
-;; #_(addition-example)
