@@ -48,6 +48,13 @@
                   (vm.machine/operand-peek))]
     (vm.machine/set-local machine key value)))
 
+(defn get-var
+  [machine args]
+  (let [key (-> machine
+                (vm.machine/data (get args 0)))
+        value (vm.machine/get-local machine key)]
+    (vm.machine/operand-push machine value)))
+
 (defn call
   [machine args]
   (let [label (-> machine
@@ -70,7 +77,6 @@
                       (vm.machine/operand-peek))
         machine (-> machine
                     (vm.machine/operand-pop))]
-    (tap> ["JUMPIF" condition])
     (if condition
       (let [label (-> machine
                       (vm.machine/data (get args 0)))]
@@ -88,17 +94,8 @@
       (vm.instruction/insert (vm.instruction/make-instruction 5 "jump" 1 jump))
       (vm.instruction/insert (vm.instruction/make-instruction 6 "invoke>" 2 invoke))
       (vm.instruction/insert (vm.instruction/make-instruction 7 "variable" 2 variable))
-      (vm.instruction/insert (vm.instruction/make-instruction 8 "assign-var" 1 assign-var))))
-
-#_(def it (instruction-table))
-#_(def builder (-> it
-                   (vm.code/make-builder)
-                   (vm.code/push "push" [1])
-                   (vm.code/push "push" [2])
-                   (vm.code/push "invoke>" [+ 2])))
-#_(def machine (vm.machine/make-machine (vm.code/make-code builder) {} it))
-#_(tap> machine)
-#_(vm.machine/execute machine)
+      (vm.instruction/insert (vm.instruction/make-instruction 8 "assign-var" 1 assign-var))
+      (vm.instruction/insert (vm.instruction/make-instruction 9 "get-var" 1 get-var))))
 
 (s/def ::args (s/cat
                :sym symbol?
@@ -116,24 +113,6 @@
 (defn remove-last [str]
   (.substring (java.lang.String. str) 0 (- (count str) 1)))
 
-
-;; (defn body->builder
-;;   [builder body]
-;;   (tap> ["BUILDER" body])
-;;   (loop [current (first body)
-;;          others (rest body)
-;;          builder builder
-;;          cnt 0]
-;;     (if (or (= cnt 2) (nil? current))
-;;       builder
-;;       (let [op (sym->op current)]
-;;         (recur (first others) (rest others) (-> builder (vm.code/push op [current])) (+ cnt 1))))))
-
-;; 4 5 invoke> + 2
-
-
-#_(drop-last "hllo")
-
 (defn get-op
   [current others]
   (let [others (if (empty? others) [] others)]
@@ -141,16 +120,9 @@
       (= current "if>") ["if>" [] others]
       (= current "<pop>") ["<pop>" [] others]
       (and (cstr/starts-with? current "!") (cstr/ends-with? current "+")) ["assign-var" [(remove-last current)] others]
+      (cstr/starts-with? current "!") ["get-var" [current] others]
       (= "invoke>" current) ["invoke>" [(-> others first (symbol) (resolve)) (-> others rest first (edn/read-string))] (-> others rest rest)]
       :else ["push" [(edn/read-string current)] others])))
-
-;; (-> builder
-;;         (vm.code/push "if>" ["if-true"])
-;;         (vm.code/push "push" ["It was false"])
-;;         (vm.code/push "jump" ["end"])
-;;         (vm.code/add-label "if-true")
-;;         (vm.code/push "push" ["it was true"])
-;;         (vm.code/add-label "end"))
 
 (defn get-cond-block
   [others]
@@ -168,13 +140,10 @@
                            (recur (first others) (rest others) (conj result current))))]
     [truthy falsy others]))
 
-#_(get-cond-block ["hello" "world" "else>" "boom" "shankar"])
-
 (declare eval-builder)
 
 (defn get-builder
   [builder op current others]
-  (tap> ["GET" op current others])
   (cond
     (= op "if>")
     (let [[truthy falsy others] (get-cond-block others)
@@ -212,11 +181,9 @@
         builder (eval-builder builder instructions)
         machine (vm.machine/make-machine (vm.code/make-code builder) {} it)
         machine (vm.machine/execute machine)]
-    machine))
+    (vm.machine/operand-peek machine)))
 
-#_(vm.machine/operand-peek machine)
-
-#_(def strv "1 2 invoke> + 2 !v1+ 4 4 <pop> 2 invoke> * 2 !v2+ invoke> = 2 if> 'hello' else> 'world'")
+#_(def strv "1 2 invoke> + 2 !v1+ 4 4 <pop> 2 invoke> * 2 !v2+ invoke> = 2 if> 'hello' else> 'false!!' invoke> println 1 <pop> !v1 !v2 invoke> * 2")
 #_(eval-str strv)
 
 (defn body->builder
