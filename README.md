@@ -9,6 +9,6 @@ git clone https://github.com/heypragyan/rplvm
 
 cd rplvm
 
-;; Start repl
+# Start repl
 clj -M:dev:nrepl:test
 ```
