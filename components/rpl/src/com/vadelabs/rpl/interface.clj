@@ -181,7 +181,7 @@
         builder (eval-builder builder instructions)
         machine (vm.machine/make-machine (vm.code/make-code builder) {} it)
         machine (vm.machine/execute machine)]
-    (tap> ["machine" machine])
+    ;;(tap> ["machine" machine])
     (vm.machine/operand-peek machine)))
 
 #_(def strv "1 2 invoke> + 2 !v1+ 4 4 <pop> 2 invoke> * 2 !v2+ invoke> = 2 if> 'hello' else> 'false!!' invoke> println 1 <pop> !v1 !v2 invoke> * 2 !v4")
